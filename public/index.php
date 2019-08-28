@@ -7,6 +7,9 @@ use Monolog\Monolog;
 use DI\Container;
 use \Controllers;
 
+ini_set('display_errors','On');
+error_reporting(E_ALL);
+
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__.'/../app/config.php'; // General settings
 require __DIR__.'/../app/dependencies.php'; // DIC
