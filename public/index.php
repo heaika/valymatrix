@@ -14,11 +14,9 @@ AppFactory::setContainer($container);
 $app = AppFactory::create();
 
 
+require __DIR__.'/../app/settings.php'; // General settings
 
-$displayErrorDetails = true;
-$logErrors = true;
-$logErrorDetails = false;
-$app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
+$app->addErrorMiddleware($settings['displayErrorDetails'], $settings['logErrors'], $settings['logErrorDetails']);
 
 $app->get('/', function (Request $request, Response $response, $args) {
     $response->getBody()->write("Hello world!");
