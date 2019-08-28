@@ -10,7 +10,7 @@ AppFactory::setContainer($container);
 $app = AppFactory::create();
 
 $container->set('renderer', function () {
-	return new PhpRenderer();
+	return new PhpRenderer('../src/templates/en_GB/');
 });
 
 

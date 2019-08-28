@@ -14,4 +14,4 @@ $app->get('/', function (Request $request, Response $response, $args) {
 $app->get('/login', function (Request $request, Response $response, $args) {
    $loginController = new \Controllers\LoginController();
    return $loginController->getLogin($request,$response,$args);
-});
+})->setName('login');
