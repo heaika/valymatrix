@@ -1,2 +1,3 @@
 <?php
 
+$settings['placeholder'] = "Placeholder";

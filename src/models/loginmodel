@@ -1,0 +1,14 @@
+<?php
+namespace Models;
+
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
+
+Class loginModel {
+
+   function __construct($request, $response, $args, $container) {
+      $this->c = $container;
+   }
+
+
+}
