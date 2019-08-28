@@ -34,17 +34,18 @@ class ResponseEmitter
      */
     public function emit(ResponseInterface $response): void
     {
+        $isEmpty = $this->isResponseEmpty($response);
         if (headers_sent() === false) {
-            if ($this->isResponseEmpty($response)) {
+            if ($isEmpty) {
                 $response = $response
                     ->withoutHeader('Content-Type')
                     ->withoutHeader('Content-Length');
             }
-            $this->emitHeaders($response);
             $this->emitStatusLine($response);
+            $this->emitHeaders($response);
         }
 
-        if (!$this->isResponseEmpty($response)) {
+        if (!$isEmpty) {
             $this->emitBody($response);
         }
     }
@@ -57,7 +58,7 @@ class ResponseEmitter
     private function emitHeaders(ResponseInterface $response): void
     {
         foreach ($response->getHeaders() as $name => $values) {
-            $first = $name !== 'Set-Cookie';
+            $first = strtolower($name) !== 'set-cookie';
             foreach ($values as $value) {
                 $header = sprintf('%s: %s', $name, $value);
                 header($header, $first);
@@ -129,8 +130,14 @@ class ResponseEmitter
      */
     public function isResponseEmpty(ResponseInterface $response): bool
     {
-        $contents = (string) $response->getBody();
-
-        return !strlen($contents) || in_array($response->getStatusCode(), [204, 205, 304], true);
+        if (in_array($response->getStatusCode(), [204, 205, 304], true)) {
+            return true;
+        }
+        $stream = $response->getBody();
+        $seekable = $stream->isSeekable();
+        if ($seekable) {
+            $stream->rewind();
+        }
+        return $seekable ? $stream->read(1) === '' : $stream->eof();
     }
 }

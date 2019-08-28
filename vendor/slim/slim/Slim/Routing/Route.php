@@ -17,8 +17,10 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Handlers\Strategies\RequestHandler;
 use Slim\Handlers\Strategies\RequestResponse;
+use Slim\Interfaces\AdvancedCallableResolverInterface;
 use Slim\Interfaces\CallableResolverInterface;
 use Slim\Interfaces\InvocationStrategyInterface;
+use Slim\Interfaces\RequestHandlerInvocationStrategyInterface;
 use Slim\Interfaces\RouteGroupInterface;
 use Slim\Interfaces\RouteInterface;
 use Slim\MiddlewareDispatcher;
@@ -144,7 +146,7 @@ class Route implements RouteInterface, RequestHandlerInterface
         $this->invocationStrategy = $invocationStrategy ?? new RequestResponse();
         $this->groups = $groups;
         $this->identifier = 'route' . $identifier;
-        $this->middlewareDispatcher = new MiddlewareDispatcher($this, $container);
+        $this->middlewareDispatcher = new MiddlewareDispatcher($this, $callableResolver, $container);
     }
 
     /**
@@ -302,14 +304,7 @@ class Route implements RouteInterface, RequestHandlerInterface
      */
     public function prepare(array $arguments): RouteInterface
     {
-        // Remove temp arguments
-        $this->setArguments($this->savedArguments);
-
-        // Add the arguments
-        foreach ($arguments as $k => $v) {
-            $this->setArgument($k, $v, false);
-        }
-
+        $this->arguments = array_replace($this->savedArguments, $arguments) ?? [];
         return $this;
     }
 
@@ -344,7 +339,7 @@ class Route implements RouteInterface, RequestHandlerInterface
     protected function appendGroupMiddlewareToRoute(): void
     {
         $inner = $this->middlewareDispatcher;
-        $this->middlewareDispatcher = new MiddlewareDispatcher($inner, $this->container);
+        $this->middlewareDispatcher = new MiddlewareDispatcher($inner, $this->callableResolver, $this->container);
 
         /** @var RouteGroupInterface $group */
         foreach (array_reverse($this->groups) as $group) {
@@ -359,10 +354,17 @@ class Route implements RouteInterface, RequestHandlerInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $callable = $this->callableResolver->resolve($this->callable);
-
+        if ($this->callableResolver instanceof AdvancedCallableResolverInterface) {
+            $callable = $this->callableResolver->resolveRoute($this->callable);
+        } else {
+            $callable = $this->callableResolver->resolve($this->callable);
+        }
         $strategy = $this->invocationStrategy;
-        if (is_array($callable) && $callable[0] instanceof RequestHandlerInterface) {
+
+        if (is_array($callable)
+            && $callable[0] instanceof RequestHandlerInterface
+            && !in_array(RequestHandlerInvocationStrategyInterface::class, class_implements($strategy))
+        ) {
             $strategy = new RequestHandler();
         }
 

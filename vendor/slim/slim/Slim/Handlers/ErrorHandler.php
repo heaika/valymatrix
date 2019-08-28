@@ -43,6 +43,11 @@ class ErrorHandler implements ErrorHandlerInterface
     protected $defaultErrorRenderer = HtmlErrorRenderer::class;
 
     /**
+     * @var ErrorRendererInterface|string|callable
+     */
+    protected $logErrorRenderer = PlainTextErrorRenderer::class;
+
+    /**
      * @var array
      */
     protected $errorRenderers = [
@@ -138,7 +143,7 @@ class ErrorHandler implements ErrorHandlerInterface
         $this->exception = $exception;
         $this->method = $request->getMethod();
         $this->statusCode = $this->determineStatusCode();
-        if (is_null($this->contentType)) {
+        if ($this->contentType === null) {
             $this->contentType = $this->determineContentType($request);
         }
 
@@ -227,7 +232,7 @@ class ErrorHandler implements ErrorHandlerInterface
      */
     protected function determineRenderer(): callable
     {
-        if (!is_null($this->contentType) && array_key_exists($this->contentType, $this->errorRenderers)) {
+        if ($this->contentType !== null && array_key_exists($this->contentType, $this->errorRenderers)) {
             $renderer = $this->errorRenderers[$this->contentType];
         } else {
             $renderer = $this->defaultErrorRenderer;
@@ -260,14 +265,24 @@ class ErrorHandler implements ErrorHandlerInterface
     }
 
     /**
+     * Set the renderer for the error logger
+     *
+     * @param ErrorRendererInterface|string|callable $logErrorRenderer
+     */
+    public function setLogErrorRenderer($logErrorRenderer): void
+    {
+        $this->logErrorRenderer = $logErrorRenderer;
+    }
+
+    /**
      * Write to the error log if $logErrors has been set to true
      *
      * @return void
      */
     protected function writeToErrorLog(): void
     {
-        $renderer = new PlainTextErrorRenderer();
-        $error = $renderer->__invoke($this->exception, $this->logErrorDetails);
+        $renderer = $this->callableResolver->resolve($this->logErrorRenderer);
+        $error = $renderer($this->exception, $this->logErrorDetails);
         $error .= "\nView in rendered output by enabling the \"displayErrorDetails\" setting.\n";
         $this->logError($error);
     }
@@ -289,7 +304,7 @@ class ErrorHandler implements ErrorHandlerInterface
     protected function respond(): ResponseInterface
     {
         $response = $this->responseFactory->createResponse($this->statusCode);
-        if (!is_null($this->contentType) && array_key_exists($this->contentType, $this->errorRenderers)) {
+        if ($this->contentType !== null && array_key_exists($this->contentType, $this->errorRenderers)) {
             $response = $response->withHeader('Content-type', $this->contentType);
         } else {
             $response = $response->withHeader('Content-type', $this->defaultErrorRendererContentType);
