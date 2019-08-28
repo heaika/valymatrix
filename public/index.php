@@ -8,24 +8,11 @@ use DI\Container;
 use \Controllers;
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../app/config.php'; // General settings
+require __DIR__.'/../app/dependencies.php'; // DIC
 
-$container = new Container();
-AppFactory::setContainer($container);
-$app = AppFactory::create();
+$app->addErrorMiddleware($config['displayErrorDetails'], $config['logErrors'], $config['logErrorDetails']);
 
-
-require __DIR__.'/../app/settings.php'; // General settings
-
-$app->addErrorMiddleware($settings['displayErrorDetails'], $settings['logErrors'], $settings['logErrorDetails']);
-
-$app->get('/', function (Request $request, Response $response, $args) {
-    $response->getBody()->write("Hello world!");
-    return $response;
-});
-
-$app->get('/login', function (Request $request, Response $response, $args) {
-   $loginController = new \Controllers\LoginController();
-   return $loginController->getLogin($request,$response,$args);
-});
+require __DIR__.'/../app/routes.php'; // Routes for app
 
 $app->run();
