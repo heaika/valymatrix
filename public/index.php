@@ -4,10 +4,16 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Slim\Views\PhpRenderer;
 use Monolog\Monolog;
+use DI\Container;
+use \Controllers;
 
 require __DIR__ . '/../vendor/autoload.php';
 
+$container = new Container();
+AppFactory::setContainer($container);
 $app = AppFactory::create();
+
+
 
 $displayErrorDetails = true;
 $logErrors = true;
@@ -20,8 +26,8 @@ $app->get('/', function (Request $request, Response $response, $args) {
 });
 
 $app->get('/login', function (Request $request, Response $response, $args) {
-   $c = new \Controllers\LoginController();
-   return $c->getLogin($request,$response,$args);
+   $loginController = new \Controllers\LoginController();
+   return $loginController->getLogin($request,$response,$args);
 });
 
 $app->run();
